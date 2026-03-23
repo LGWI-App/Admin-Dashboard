@@ -27,8 +27,8 @@ export const MeterReadingsEdit = () => {
       id,
       redirect: "list",
       meta: {
-        select: "entry_id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
-        idColumnName: "entry_id",
+        select: "id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
+        idColumnName: "id",
       },
     },
   });

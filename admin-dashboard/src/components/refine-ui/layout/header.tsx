@@ -11,9 +11,9 @@ import { cn } from "@/lib/utils";
 import {
   useActiveAuthProvider,
   useLogout,
-  useRefineOptions,
 } from "@refinedev/core";
 import { LogOutIcon } from "lucide-react";
+import brandLogo from "../../../../logo.png";
 
 export const Header = () => {
   const { isMobile } = useSidebar();
@@ -48,8 +48,6 @@ function DesktopHeader() {
 
 function MobileHeader() {
   const { open, isMobile } = useSidebar();
-
-  const { title } = useRefineOptions();
 
   return (
     <header
@@ -95,11 +93,16 @@ function MobileHeader() {
           }
         )}
       >
-        <div>{title.icon}</div>
+        <img
+          src={brandLogo}
+          alt="Life Giving Water"
+          className={cn("h-7 w-7 shrink-0 object-contain")}
+        />
         <h2
           className={cn(
             "text-sm",
             "font-bold",
+            "text-sidebar-primary",
             "transition-opacity",
             "duration-200",
             {
@@ -108,7 +111,7 @@ function MobileHeader() {
             }
           )}
         >
-          {title.text}
+          Life Giving Water
         </h2>
       </div>
 

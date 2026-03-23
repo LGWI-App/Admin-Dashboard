@@ -36,7 +36,7 @@ export const CommunitiesShow = () => {
   const { data, isLoading } = query;
   const metersData = metersQuery.data;
   const record = data?.data;
-  const meterCount = metersData?.total || 0;
+  const meterCount = Math.max(0, Math.trunc(Number(metersData?.total ?? 0)));
   const formatTwoDecimals = (value: number) => value.toFixed(2);
 
   if (isLoading) {
@@ -86,7 +86,7 @@ export const CommunitiesShow = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Total Meters</p>
                 <p className="text-lg font-semibold text-blue-600">
-                  {formatTwoDecimals(meterCount)} {meterCount === 1 ? "meter" : "meters"}
+                  {meterCount.toLocaleString()} {meterCount === 1 ? "meter" : "meters"}
                 </p>
               </div>
             </div>

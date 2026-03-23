@@ -16,14 +16,10 @@ import authProvider from "./providers/auth";
 import { dataProvider } from "./providers/data";
 import { supabaseClient } from "./providers/supabase-client";
 import { Layout } from "./components/refine-ui/layout/layout";
-import { Gauge, TrendingUp, MapPin } from "lucide-react";
+import { TrendingUp, MapPin } from "lucide-react";
 
 // Import pages
 import { Dashboard } from "./pages/dashboard";
-import { MetersList } from "./pages/meters/list";
-import { MetersCreate } from "./pages/meters/create";
-import { MetersEdit } from "./pages/meters/edit";
-import { MetersShow } from "./pages/meters/show";
 import { MeterReadingsList } from "./pages/meter-readings/list";
 import { MeterReadingsCreate } from "./pages/meter-readings/create";
 import { MeterReadingsEdit } from "./pages/meter-readings/edit";
@@ -47,19 +43,6 @@ function App() {
               routerProvider={routerProvider}
               notificationProvider={useNotificationProvider()}
               resources={[
-                {
-                  name: "METERS",
-                  identifier: "METERS",
-                  list: "/METERS",
-                  create: "/METERS/create",
-                  edit: "/METERS/edit/:id",
-                  show: "/METERS/show/:id",
-                  meta: {
-                    schema: "public",
-                    label: "Meters",
-                    icon: <Gauge className="w-4 h-4" />,
-                  },
-                },
                 {
                   name: "METER_READINGS",
                   identifier: "METER_READINGS",
@@ -102,14 +85,6 @@ function App() {
                   }
                 >
                   <Route index element={<Dashboard />} />
-                  
-                  {/* Meters routes */}
-                  <Route path="/METERS">
-                    <Route index element={<MetersList />} />
-                    <Route path="create" element={<MetersCreate />} />
-                    <Route path="edit/:id" element={<MetersEdit />} />
-                    <Route path="show/:id" element={<MetersShow />} />
-                  </Route>
 
                   {/* Meter Readings routes */}
                   <Route path="/METER_READINGS">

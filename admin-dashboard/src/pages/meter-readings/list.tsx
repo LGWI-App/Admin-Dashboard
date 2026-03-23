@@ -9,12 +9,26 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useList } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, FileSpreadsheet, FileText } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useMemo, useState } from "react";
+import lgwiLogo from "../../../logo.png";
 
 type Option = {
   value: string;
   label: string;
+};
+
+type MeterReadingRow = {
+  id: number;
+  METER_ID: number;
+  CURRENT_READING: number;
+  LAST_READING: number | null;
+  WATER_USED: number;
+  PRICE: number;
+  DATE_CURRENT: string;
+  DATE_LAST_READ: string | null;
 };
 
 const SearchableSelect = ({
@@ -76,11 +90,17 @@ const SearchableSelect = ({
 };
 
 export const MeterReadingsList = () => {
-  const formatTwoDecimals = (value: number) => value.toFixed(2);
+  const formatTwoDecimals = (value: number | null | undefined) =>
+    typeof value === "number" && !Number.isNaN(value) ? value.toFixed(2) : "N/A";
+  const formatDate = (value: string | null | undefined) => {
+    if (!value) return "N/A";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString();
+  };
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | undefined>();
   const [selectedMeterId, setSelectedMeterId] = useState<string | undefined>();
 
-  const { data: communitiesResult } = useList({
+  const { result: communitiesResult } = useList({
     resource: "COMMUNITY",
     pagination: {
       mode: "off",
@@ -90,7 +110,7 @@ export const MeterReadingsList = () => {
     },
   });
 
-  const { data: metersResult } = useList({
+  const { result: metersResult } = useList({
     resource: "METERS",
     pagination: {
       mode: "off",
@@ -164,10 +184,165 @@ export const MeterReadingsList = () => {
     return [];
   }, [selectedCommunityId, selectedMeterId, communityMeterIds]);
 
+  const { result: exportReadingsResult, query: exportReadingsQuery } = useList<MeterReadingRow>({
+    resource: "METER_READINGS",
+    pagination: {
+      mode: "off",
+    },
+    filters: permanentFilters,
+    meta: {
+      select: "id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
+    },
+  });
+
+  const exportRows = exportReadingsResult?.data ?? [];
+
+  const selectedCommunityLabel =
+    communityOptions.find((option) => option.value === selectedCommunityId)?.label ?? "All communities";
+  const selectedMeterLabel =
+    meterOptions.find((option) => option.value === selectedMeterId)?.label ?? "All meters";
+
+  const exportFilenameSuffix = () => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const hh = String(now.getHours()).padStart(2, "0");
+    const min = String(now.getMinutes()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}_${hh}${min}`;
+  };
+
+  const csvEscape = (value: string | number) => {
+    const text = String(value ?? "");
+    if (text.includes(",") || text.includes("\n") || text.includes('"')) {
+      return `"${text.replaceAll('"', '""')}"`;
+    }
+    return text;
+  };
+
+  const handleExportCsv = () => {
+    if (!exportRows.length) return;
+
+    const headers = [
+      "Entry ID",
+      "Meter ID",
+      "Current Reading (gal)",
+      "Last Reading (gal)",
+      "Water Used (gal)",
+      "Price ($)",
+      "Current Date",
+      "Last Read Date",
+    ];
+
+    const lines = [headers.map(csvEscape).join(",")];
+
+    for (const row of exportRows) {
+      lines.push(
+        [
+          row.id,
+          row.METER_ID,
+          formatTwoDecimals(row.CURRENT_READING),
+          formatTwoDecimals(row.LAST_READING),
+          formatTwoDecimals(row.WATER_USED),
+          formatTwoDecimals(row.PRICE),
+          formatDate(row.DATE_CURRENT),
+          formatDate(row.DATE_LAST_READ),
+        ]
+          .map(csvEscape)
+          .join(",")
+      );
+    }
+
+    const csv = lines.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `meter_readings_${exportFilenameSuffix()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPdf = () => {
+    const toDataUrl = async (imageUrl: string) => {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Unable to read logo image"));
+        reader.readAsDataURL(blob);
+      });
+    };
+
+    const exportPdf = async () => {
+      if (!exportRows.length) return;
+
+      const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+      const generatedAt = new Date().toLocaleString();
+      const titleY = 38;
+
+      try {
+        const logoDataUrl = await toDataUrl(lgwiLogo);
+        doc.addImage(logoDataUrl, "PNG", 40, 16, 72, 50);
+      } catch {
+        // Continue export even if logo loading fails.
+      }
+
+      doc.setFontSize(16);
+      doc.text("Meter Readings Report", 124, titleY);
+      doc.setFontSize(10);
+      doc.setTextColor(80);
+      doc.text(`Generated: ${generatedAt}`, 124, 58);
+      doc.text(`Community: ${selectedCommunityLabel}`, 124, 74);
+      doc.text(`Meter: ${selectedMeterLabel}`, 124, 90);
+      doc.text(`Rows: ${exportRows.length}`, 124, 106);
+
+      autoTable(doc, {
+        startY: 120,
+        head: [["Entry ID", "Meter ID", "Current (gal)", "Last (gal)", "Used (gal)", "Price ($)", "Current Date", "Last Read Date"]],
+        body: exportRows.map((row) => [
+          row.id,
+          row.METER_ID,
+          formatTwoDecimals(row.CURRENT_READING),
+          formatTwoDecimals(row.LAST_READING),
+          formatTwoDecimals(row.WATER_USED),
+          formatTwoDecimals(row.PRICE),
+          formatDate(row.DATE_CURRENT),
+          formatDate(row.DATE_LAST_READ),
+        ]),
+        theme: "striped",
+        styles: {
+          fontSize: 9,
+          cellPadding: 6,
+        },
+        headStyles: {
+          fillColor: [36, 103, 141],
+          textColor: [255, 255, 255],
+        },
+        alternateRowStyles: {
+          fillColor: [245, 250, 252],
+        },
+        margin: {
+          left: 24,
+          right: 24,
+        },
+      });
+
+      doc.save(`meter_readings_${exportFilenameSuffix()}.pdf`);
+    };
+
+    void exportPdf();
+
+  };
+
   const columns: ColumnDef<any>[] = [
     {
-      id: "entry_id",
-      accessorKey: "entry_id",
+      id: "id",
+      accessorKey: "id",
       header: "Entry ID",
     },
     {
@@ -231,7 +406,7 @@ export const MeterReadingsList = () => {
     },
     {
       id: "actions",
-      accessorKey: "entry_id",
+      accessorKey: "id",
       header: "Actions",
       cell: ({ getValue }) => {
         const id = getValue<number>();
@@ -254,7 +429,7 @@ export const MeterReadingsList = () => {
         permanent: permanentFilters,
       },
       meta: {
-        select: "entry_id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
+        select: "id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
       },
     },
   });
@@ -266,7 +441,25 @@ export const MeterReadingsList = () => {
           <h1 className="text-3xl font-bold">Meter Readings</h1>
           <p className="text-muted-foreground">Manage water meter readings</p>
         </div>
-        <CreateButton resource="METER_READINGS" />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExportCsv}
+            disabled={exportReadingsQuery.isLoading || exportRows.length === 0}
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportPdf}
+            disabled={exportReadingsQuery.isLoading || exportRows.length === 0}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Export PDF
+          </Button>
+          <CreateButton resource="METER_READINGS" />
+        </div>
       </div>
 
       <div className="mb-6 grid gap-4 md:grid-cols-[1fr_1fr_auto]">

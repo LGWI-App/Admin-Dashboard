@@ -14,8 +14,8 @@ export const MeterReadingsShow = () => {
     resource: "METER_READINGS",
     id,
     meta: {
-      select: "entry_id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
-      idColumnName: "entry_id",
+      select: "id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
+      idColumnName: "id",
     },
   });
 
@@ -55,7 +55,7 @@ export const MeterReadingsShow = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Entry ID</p>
-                <p className="text-lg font-semibold">{record?.entry_id}</p>
+                <p className="text-lg font-semibold">{record?.id}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Meter ID</p>

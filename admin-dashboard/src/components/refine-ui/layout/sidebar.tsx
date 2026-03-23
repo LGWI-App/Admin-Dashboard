@@ -24,11 +24,11 @@ import { cn } from "@/lib/utils";
 import {
   useLink,
   useMenu,
-  useRefineOptions,
   type TreeMenuItem,
 } from "@refinedev/core";
 import { ChevronRight, ListIcon } from "lucide-react";
 import React from "react";
+import brandLogo from "../../../../logo.png";
 
 export function Sidebar() {
   const { open } = useShadcnSidebar();
@@ -210,7 +210,6 @@ function SidebarItemLink({ item, selectedKey }: MenuItemProps) {
 }
 
 function SidebarHeader() {
-  const { title } = useRefineOptions();
   const { open, isMobile } = useShadcnSidebar();
 
   return (
@@ -243,11 +242,16 @@ function SidebarHeader() {
           }
         )}
       >
-        <div>{title.icon}</div>
+        <img
+          src={brandLogo}
+          alt="Life Giving Water"
+          className={cn("h-8 w-8 shrink-0 object-contain")}
+        />
         <h2
           className={cn(
             "text-sm",
             "font-bold",
+            "text-sidebar-primary",
             "transition-opacity",
             "duration-200",
             {
@@ -256,7 +260,7 @@ function SidebarHeader() {
             }
           )}
         >
-          {title.text}
+          Life Giving Water
         </h2>
       </div>
 

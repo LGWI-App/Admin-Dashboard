@@ -1,20 +1,12 @@
-import { useGo, useNavigation } from "@refinedev/core";
+import { useNavigation } from "@refinedev/core";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Droplet, Gauge, MapPin, TrendingUp } from "lucide-react";
+import { Droplet, MapPin, TrendingUp } from "lucide-react";
 
 export const Dashboard = () => {
   const { list } = useNavigation();
 
   const cards = [
-    {
-      title: "Meters",
-      description: "Manage water meters",
-      icon: Gauge,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      onClick: () => list("METERS"),
-    },
     {
       title: "Meter Readings",
       description: "View and manage meter readings",
@@ -78,14 +70,10 @@ export const Dashboard = () => {
         <CardContent>
           <p className="text-muted-foreground">
             AguaVision is a comprehensive water meter management system designed for Life Giving Water International.
-            This admin dashboard allows you to manage water meters, track readings with OCR technology, 
+            This admin dashboard allows you to track meter readings with OCR technology,
             and monitor water usage across multiple communities.
           </p>
-          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">Meters</p>
-              <p className="text-sm text-muted-foreground">Track devices</p>
-            </div>
+          <div className="mt-4 grid grid-cols-2 gap-4 text-center">
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-2xl font-bold text-green-600">Readings</p>
               <p className="text-sm text-muted-foreground">Monitor usage</p>
