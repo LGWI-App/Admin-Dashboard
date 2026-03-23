@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSelect } from "@refinedev/core";
+import { ArrowLeft } from "lucide-react";
 
 export const MetersCreate = () => {
   const navigate = useNavigate();
@@ -34,6 +35,13 @@ export const MetersCreate = () => {
 
   return (
     <div className="container mx-auto py-10 max-w-2xl">
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        Back
+      </button>
       <Card>
         <CardHeader>
           <CardTitle>Create New Meter</CardTitle>

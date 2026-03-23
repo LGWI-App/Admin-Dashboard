@@ -49,33 +49,39 @@ function App() {
               resources={[
                 {
                   name: "METERS",
+                  identifier: "METERS",
                   list: "/METERS",
                   create: "/METERS/create",
                   edit: "/METERS/edit/:id",
                   show: "/METERS/show/:id",
                   meta: {
+                    schema: "public",
                     label: "Meters",
                     icon: <Gauge className="w-4 h-4" />,
                   },
                 },
                 {
                   name: "METER_READINGS",
+                  identifier: "METER_READINGS",
                   list: "/METER_READINGS",
                   create: "/METER_READINGS/create",
                   edit: "/METER_READINGS/edit/:id",
                   show: "/METER_READINGS/show/:id",
                   meta: {
+                    schema: "public",
                     label: "Meter Readings",
                     icon: <TrendingUp className="w-4 h-4" />,
                   },
                 },
                 {
                   name: "COMMUNITY",
+                  identifier: "COMMUNITY",
                   list: "/COMMUNITY",
                   create: "/COMMUNITY/create",
                   edit: "/COMMUNITY/edit/:id",
                   show: "/COMMUNITY/show/:id",
                   meta: {
+                    schema: "public",
                     label: "Communities",
                     icon: <MapPin className="w-4 h-4" />,
                   },
@@ -84,7 +90,7 @@ function App() {
               options={{
                 syncWithLocation: true,
                 warnWhenUnsavedChanges: true,
-                projectId: "dRpgUk-NygZU9-7qLIXR",
+                projectId: "varhhvkqabiqctkcdbxa",
               }}
             >
               <Routes>

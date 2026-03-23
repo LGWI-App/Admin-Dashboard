@@ -4,9 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
 
 export const CommunitiesCreate = () => {
   const navigate = useNavigate();
+  const toTwoDecimals = (value: unknown) => {
+    if (value === "") return undefined;
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) return undefined;
+    return Math.round(parsed * 100) / 100;
+  };
 
   const {
     refineCore: { onFinish },
@@ -22,6 +29,13 @@ export const CommunitiesCreate = () => {
 
   return (
     <div className="container mx-auto py-10 max-w-2xl">
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        Back
+      </button>
       <Card>
         <CardHeader>
           <CardTitle>Create New Community</CardTitle>
@@ -29,17 +43,17 @@ export const CommunitiesCreate = () => {
         <CardContent>
           <form onSubmit={handleSubmit(onFinish)} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="COMMUNITY_NAME">Community Name</Label>
+              <Label htmlFor="LOCATION_NAME">Location Name</Label>
               <Input
-                id="COMMUNITY_NAME"
-                {...register("COMMUNITY_NAME", {
-                  required: "Community name is required",
+                id="LOCATION_NAME"
+                {...register("LOCATION_NAME", {
+                  required: "Location name is required",
                 })}
-                placeholder="Enter community name"
+                placeholder="Enter location name"
               />
-              {errors.COMMUNITY_NAME && (
+              {errors.LOCATION_NAME && (
                 <p className="text-sm text-destructive">
-                  {errors.COMMUNITY_NAME.message as string}
+                  {errors.LOCATION_NAME.message as string}
                 </p>
               )}
             </div>
@@ -49,10 +63,10 @@ export const CommunitiesCreate = () => {
               <Input
                 id="PRICE_RATE"
                 type="number"
-                step="0.0001"
+                step="0.01"
                 {...register("PRICE_RATE", {
                   required: "Price rate is required",
-                  valueAsNumber: true,
+                  setValueAs: toTwoDecimals,
                   min: {
                     value: 0,
                     message: "Price rate must be positive",

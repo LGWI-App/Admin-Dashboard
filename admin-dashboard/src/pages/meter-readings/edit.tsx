@@ -4,10 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
 
 export const MeterReadingsEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const toTwoDecimals = (value: unknown) => {
+    if (value === "") return undefined;
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) return undefined;
+    return Math.round(parsed * 100) / 100;
+  };
 
   const {
     refineCore: { onFinish },
@@ -21,12 +28,20 @@ export const MeterReadingsEdit = () => {
       redirect: "list",
       meta: {
         select: "entry_id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
+        idColumnName: "entry_id",
       },
     },
   });
 
   return (
     <div className="container mx-auto py-10 max-w-2xl">
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        Back
+      </button>
       <Card>
         <CardHeader>
           <CardTitle>Edit Meter Reading #{id}</CardTitle>
@@ -59,7 +74,7 @@ export const MeterReadingsEdit = () => {
                 step="0.01"
                 {...register("CURRENT_READING", {
                   required: "Current reading is required",
-                  valueAsNumber: true,
+                  setValueAs: toTwoDecimals,
                 })}
                 placeholder="Enter current reading"
               />
@@ -77,7 +92,7 @@ export const MeterReadingsEdit = () => {
                 type="number"
                 step="0.01"
                 {...register("LAST_READING", {
-                  valueAsNumber: true,
+                  setValueAs: toTwoDecimals,
                 })}
                 placeholder="Enter last reading"
               />
@@ -91,7 +106,7 @@ export const MeterReadingsEdit = () => {
                 step="0.01"
                 {...register("WATER_USED", {
                   required: "Water used is required",
-                  valueAsNumber: true,
+                  setValueAs: toTwoDecimals,
                 })}
                 placeholder="Enter water used"
               />
@@ -110,7 +125,7 @@ export const MeterReadingsEdit = () => {
                 step="0.01"
                 {...register("PRICE", {
                   required: "Price is required",
-                  valueAsNumber: true,
+                  setValueAs: toTwoDecimals,
                 })}
                 placeholder="Enter price"
               />

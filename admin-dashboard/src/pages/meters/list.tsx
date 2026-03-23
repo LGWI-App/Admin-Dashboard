@@ -8,6 +8,8 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 export const MetersList = () => {
+  const formatTwoDecimals = (value: number) => value.toFixed(2);
+
   const columns: ColumnDef<any>[] = [
     {
       id: "METER_ID",
@@ -43,7 +45,7 @@ export const MetersList = () => {
       header: "Latest Reading",
       cell: ({ getValue }) => {
         const value = getValue<number>();
-        return value ? `${value.toLocaleString()} gal` : "N/A";
+        return value != null ? `${formatTwoDecimals(value)} gal` : "N/A";
       },
     },
     {

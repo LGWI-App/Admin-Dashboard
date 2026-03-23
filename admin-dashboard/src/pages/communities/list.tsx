@@ -14,9 +14,9 @@ export const CommunitiesList = () => {
       header: "Community ID",
     },
     {
-      id: "COMMUNITY_NAME",
-      accessorKey: "COMMUNITY_NAME",
-      header: "Community Name",
+      id: "LOCATION_NAME",
+      accessorKey: "LOCATION_NAME",
+      header: "Location Name",
     },
     {
       id: "PRICE_RATE",
@@ -24,7 +24,7 @@ export const CommunitiesList = () => {
       header: "Price Rate ($/gal)",
       cell: ({ getValue }) => {
         const value = getValue<number>();
-        return value ? `$${value.toFixed(4)}` : "N/A";
+        return value ? `$${value.toFixed(2)}` : "N/A";
       },
     },
     {
@@ -49,7 +49,7 @@ export const CommunitiesList = () => {
     refineCoreProps: {
       resource: "COMMUNITY",
       meta: {
-        select: "COMMUNITY_ID,COMMUNITY_NAME,PRICE_RATE",
+        select: "COMMUNITY_ID,LOCATION_NAME,PRICE_RATE",
       },
     },
   });

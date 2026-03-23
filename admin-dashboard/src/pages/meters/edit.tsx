@@ -5,10 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
 
 export const MetersEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const toTwoDecimals = (value: unknown) => {
+    if (value === "") return undefined;
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) return undefined;
+    return Math.round(parsed * 100) / 100;
+  };
 
   const {
     refineCore: { onFinish },
@@ -24,6 +31,7 @@ export const MetersEdit = () => {
       redirect: "list",
       meta: {
         select: "METER_ID,HOUSEHOLD_NAME,COMMUNITY_ID,ACTIVE,LATEST_READING,LAST_READ_DATE",
+        idColumnName: "METER_ID",
       },
     },
   });
@@ -32,6 +40,13 @@ export const MetersEdit = () => {
 
   return (
     <div className="container mx-auto py-10 max-w-2xl">
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        Back
+      </button>
       <Card>
         <CardHeader>
           <CardTitle>Edit Meter #{id}</CardTitle>
@@ -77,8 +92,9 @@ export const MetersEdit = () => {
               <Input
                 id="LATEST_READING"
                 type="number"
+                step="0.01"
                 {...register("LATEST_READING", {
-                  valueAsNumber: true,
+                  setValueAs: toTwoDecimals,
                 })}
                 placeholder="Enter latest reading"
               />

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EditButton } from "@/components/refine-ui/buttons/edit";
 import { ListButton } from "@/components/refine-ui/buttons/list";
 import { DeleteButton } from "@/components/refine-ui/buttons/delete";
+import { ArrowLeft } from "lucide-react";
 
 export const MetersShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,11 +17,13 @@ export const MetersShow = () => {
     id,
     meta: {
       select: "METER_ID,HOUSEHOLD_NAME,COMMUNITY_ID,ACTIVE,LATEST_READING,LAST_READ_DATE",
+      idColumnName: "METER_ID",
     },
   });
 
   const { data, isLoading } = query;
   const record = data?.data;
+  const formatTwoDecimals = (value: number) => value.toFixed(2);
 
   if (isLoading) {
     return <div className="container mx-auto py-10">Loading...</div>;
@@ -28,8 +31,16 @@ export const MetersShow = () => {
 
   return (
     <div className="container mx-auto py-10 max-w-4xl">
-      <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Meter Details</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-3xl font-bold">Meter Details</h1>
+        </div>
         <div className="flex gap-2">
           <ListButton resource="METERS" />
           <EditButton recordItemId={id} />
@@ -65,7 +76,9 @@ export const MetersShow = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Latest Reading</p>
                 <p className="text-lg font-semibold">
-                  {record?.LATEST_READING ? `${record.LATEST_READING.toLocaleString()} gallons` : "N/A"}
+                  {record?.LATEST_READING != null
+                    ? `${formatTwoDecimals(record.LATEST_READING)} gallons`
+                    : "N/A"}
                 </p>
               </div>
               <div>

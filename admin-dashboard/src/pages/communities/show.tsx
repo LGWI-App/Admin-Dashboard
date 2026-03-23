@@ -1,18 +1,21 @@
 import { useShow, useList } from "@refinedev/core";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditButton } from "@/components/refine-ui/buttons/edit";
 import { ListButton } from "@/components/refine-ui/buttons/list";
 import { DeleteButton } from "@/components/refine-ui/buttons/delete";
+import { ArrowLeft } from "lucide-react";
 
 export const CommunitiesShow = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const { query } = useShow({
     resource: "COMMUNITY",
     id,
     meta: {
-      select: "COMMUNITY_ID,COMMUNITY_NAME,PRICE_RATE",
+      select: "COMMUNITY_ID,LOCATION_NAME,PRICE_RATE",
+      idColumnName: "COMMUNITY_ID",
     },
   });
 
@@ -34,6 +37,7 @@ export const CommunitiesShow = () => {
   const metersData = metersQuery.data;
   const record = data?.data;
   const meterCount = metersData?.total || 0;
+  const formatTwoDecimals = (value: number) => value.toFixed(2);
 
   if (isLoading) {
     return <div className="container mx-auto py-10">Loading...</div>;
@@ -41,8 +45,16 @@ export const CommunitiesShow = () => {
 
   return (
     <div className="container mx-auto py-10 max-w-4xl">
-      <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Community Details</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-3xl font-bold">Community Details</h1>
+        </div>
         <div className="flex gap-2">
           <ListButton resource="COMMUNITY" />
           <EditButton recordItemId={id} />
@@ -62,19 +74,19 @@ export const CommunitiesShow = () => {
                 <p className="text-lg font-semibold">{record?.COMMUNITY_ID}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Community Name</p>
-                <p className="text-lg font-semibold">{record?.COMMUNITY_NAME || "N/A"}</p>
+                <p className="text-sm text-muted-foreground">Location Name</p>
+                <p className="text-lg font-semibold">{record?.LOCATION_NAME || "N/A"}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Price Rate</p>
                 <p className="text-lg font-semibold text-green-600">
-                  ${record?.PRICE_RATE?.toFixed(4)} per gallon
+                  ${formatTwoDecimals(record?.PRICE_RATE || 0)} per gallon
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Meters</p>
                 <p className="text-lg font-semibold text-blue-600">
-                  {meterCount} {meterCount === 1 ? "meter" : "meters"}
+                  {formatTwoDecimals(meterCount)} {meterCount === 1 ? "meter" : "meters"}
                 </p>
               </div>
             </div>
