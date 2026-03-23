@@ -2,30 +2,8 @@ import { AuthProvider } from "@refinedev/core";
 import { supabaseClient } from "./supabase-client";
 
 const authProvider: AuthProvider = {
-  login: async ({ email, password, providerName }) => {
-    // sign in with oauth
+  login: async ({ email, password }) => {
     try {
-      if (providerName) {
-        const { data, error } = await supabaseClient.auth.signInWithOAuth({
-          provider: providerName,
-        });
-
-        if (error) {
-          return {
-            success: false,
-            error,
-          };
-        }
-
-        if (data?.url) {
-          return {
-            success: true,
-            redirectTo: "/",
-          };
-        }
-      }
-
-      // sign in with email and password
       const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
@@ -60,37 +38,11 @@ const authProvider: AuthProvider = {
     };
   },
   register: async ({ email, password }) => {
-    try {
-      const { data, error } = await supabaseClient.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        return {
-          success: false,
-          error,
-        };
-      }
-
-      if (data) {
-        return {
-          success: true,
-          redirectTo: "/",
-        };
-      }
-    } catch (error: any) {
-      return {
-        success: false,
-        error,
-      };
-    }
-
     return {
       success: false,
       error: {
-        message: "Register failed",
-        name: "Invalid email or password",
+        message: "Self sign-up is disabled",
+        name: "Registration disabled",
       },
     };
   },

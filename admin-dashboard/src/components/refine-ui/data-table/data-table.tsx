@@ -167,6 +167,9 @@ export function DataTable<TData extends BaseRecord>({
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => {
+                      const shouldTruncate =
+                        cell.column.id !== "actions" && cell.column.id !== "flags";
+
                       return (
                         <TableCell
                           key={cell.id}
@@ -177,7 +180,12 @@ export function DataTable<TData extends BaseRecord>({
                             }),
                           }}
                         >
-                          <div className="truncate">
+                          <div
+                            className={cn({
+                              truncate: shouldTruncate,
+                              "whitespace-normal": !shouldTruncate,
+                            })}
+                          >
                             {flexRender(
                               cell.column.columnDef.cell,
                               cell.getContext()

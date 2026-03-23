@@ -1,18 +1,26 @@
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
+import { Badge } from "@/components/ui/badge";
 import { CreateButton } from "@/components/refine-ui/buttons/create";
 import { DeleteButton } from "@/components/refine-ui/buttons/delete";
 import { EditButton } from "@/components/refine-ui/buttons/edit";
 import { ShowButton } from "@/components/refine-ui/buttons/show";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useList } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { Check, ChevronsUpDown, FileSpreadsheet, FileText } from "lucide-react";
+import { Check, ChevronsUpDown, FileSpreadsheet, FileText, MoreHorizontal, Save, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import lgwiLogo from "../../../logo.png";
 
 type Option = {
@@ -23,6 +31,7 @@ type Option = {
 type MeterReadingRow = {
   id: number;
   METER_ID: number;
+  COMMUNITY_ID: number;
   CURRENT_READING: number;
   LAST_READING: number | null;
   WATER_USED: number;
@@ -30,6 +39,20 @@ type MeterReadingRow = {
   DATE_CURRENT: string;
   DATE_LAST_READ: string | null;
 };
+
+type SortOption = "date_desc" | "date_asc" | "usage_desc" | "price_desc" | "meter_asc";
+
+type SavedPreset = {
+  id: string;
+  name: string;
+  communityId?: string;
+  meterId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy: SortOption;
+};
+
+const PRESETS_STORAGE_KEY = "meter-readings-filter-presets";
 
 const SearchableSelect = ({
   label,
@@ -99,6 +122,45 @@ export const MeterReadingsList = () => {
   };
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | undefined>();
   const [selectedMeterId, setSelectedMeterId] = useState<string | undefined>();
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  const [sortBy, setSortBy] = useState<SortOption>("date_desc");
+  const [savedPresets, setSavedPresets] = useState<SavedPreset[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(PRESETS_STORAGE_KEY);
+    if (!stored) return;
+
+    try {
+      const parsed = JSON.parse(stored) as SavedPreset[];
+      if (Array.isArray(parsed)) {
+        setSavedPresets(parsed);
+      }
+    } catch {
+      localStorage.removeItem(PRESETS_STORAGE_KEY);
+    }
+  }, []);
+
+  const savePresetsToStorage = (presets: SavedPreset[]) => {
+    setSavedPresets(presets);
+    localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
+  };
+
+  const getSorters = (sortValue: SortOption) => {
+    switch (sortValue) {
+      case "date_asc":
+        return [{ field: "DATE_CURRENT", order: "asc" as const }];
+      case "usage_desc":
+        return [{ field: "WATER_USED", order: "desc" as const }];
+      case "price_desc":
+        return [{ field: "PRICE", order: "desc" as const }];
+      case "meter_asc":
+        return [{ field: "METER_ID", order: "asc" as const }];
+      case "date_desc":
+      default:
+        return [{ field: "DATE_CURRENT", order: "desc" as const }];
+    }
+  };
 
   const { result: communitiesResult } = useList({
     resource: "COMMUNITY",
@@ -131,10 +193,12 @@ export const MeterReadingsList = () => {
 
   const communityOptions = useMemo<Option[]>(() => {
     const rows = communitiesResult?.data ?? [];
-    return rows.map((community: any) => ({
-      value: String(community.COMMUNITY_ID),
-      label: `${community.LOCATION_NAME} (#${community.COMMUNITY_ID})`,
-    }));
+    return rows
+      .map((community: any) => ({
+        value: String(community.COMMUNITY_ID),
+        label: `${community.LOCATION_NAME} (#${community.COMMUNITY_ID})`,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [communitiesResult?.data]);
 
   const meterOptions = useMemo<Option[]>(() => {
@@ -151,38 +215,54 @@ export const MeterReadingsList = () => {
   }, [metersResult?.data]);
 
   const permanentFilters = useMemo(() => {
+    const filters: Array<{
+      field: string;
+      operator: "eq" | "in" | "gte" | "lte";
+      value: number | number[] | string;
+    }> = [];
+
     if (selectedMeterId) {
-      return [
-        {
-          field: "METER_ID",
-          operator: "eq" as const,
-          value: Number(selectedMeterId),
-        },
-      ];
-    }
-
-    if (selectedCommunityId) {
+      filters.push({
+        field: "METER_ID",
+        operator: "eq",
+        value: Number(selectedMeterId),
+      });
+    } else if (selectedCommunityId) {
       if (!communityMeterIds.length) {
-        return [
-          {
-            field: "METER_ID",
-            operator: "eq" as const,
-            value: -1,
-          },
-        ];
-      }
-
-      return [
-        {
+        filters.push({
           field: "METER_ID",
-          operator: "in" as const,
+          operator: "eq",
+          value: -1,
+        });
+      } else {
+        filters.push({
+          field: "METER_ID",
+          operator: "in",
           value: communityMeterIds,
-        },
-      ];
+        });
+      }
     }
 
-    return [];
-  }, [selectedCommunityId, selectedMeterId, communityMeterIds]);
+    if (dateFrom) {
+      filters.push({
+        field: "DATE_CURRENT",
+        operator: "gte",
+        value: `${dateFrom}T00:00:00`,
+      });
+    }
+
+    if (dateTo) {
+      filters.push({
+        field: "DATE_CURRENT",
+        operator: "lte",
+        value: `${dateTo}T23:59:59`,
+      });
+    }
+
+    return filters;
+  }, [selectedCommunityId, selectedMeterId, communityMeterIds, dateFrom, dateTo]);
+
+  const permanentSorters = useMemo(() => getSorters(sortBy), [sortBy]);
 
   const { result: exportReadingsResult, query: exportReadingsQuery } = useList<MeterReadingRow>({
     resource: "METER_READINGS",
@@ -190,12 +270,136 @@ export const MeterReadingsList = () => {
       mode: "off",
     },
     filters: permanentFilters,
+    sorters: permanentSorters,
     meta: {
-      select: "id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
+      select: "id,METER_ID,COMMUNITY_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
     },
   });
 
   const exportRows = exportReadingsResult?.data ?? [];
+
+  const anomalyMetrics = useMemo(() => {
+    const usageValues = exportRows
+      .map((row) => Number(row.WATER_USED))
+      .filter((value) => Number.isFinite(value));
+
+    const pricePerGallonValues = exportRows
+      .filter((row) => row.WATER_USED > 0)
+      .map((row) => row.PRICE / row.WATER_USED)
+      .filter((value) => Number.isFinite(value));
+
+    const usageMean =
+      usageValues.length > 0
+        ? usageValues.reduce((sum, value) => sum + value, 0) / usageValues.length
+        : 0;
+    const usageVariance =
+      usageValues.length > 0
+        ? usageValues.reduce((sum, value) => sum + (value - usageMean) ** 2, 0) /
+          usageValues.length
+        : 0;
+    const usageStdDev = Math.sqrt(usageVariance);
+
+    const sortedPricePerGallon = [...pricePerGallonValues].sort((a, b) => a - b);
+    const medianPricePerGallon =
+      sortedPricePerGallon.length > 0
+        ? sortedPricePerGallon[Math.floor(sortedPricePerGallon.length / 2)]
+        : 0;
+
+    return {
+      usageMean,
+      usageStdDev,
+      medianPricePerGallon,
+    };
+  }, [exportRows]);
+
+  const getRowFlags = (row: MeterReadingRow) => {
+    const flags: Array<{ label: string; variant: "destructive" | "secondary" }> = [];
+
+    if (row.WATER_USED < 0) {
+      flags.push({ label: "Negative usage", variant: "destructive" });
+    }
+
+    if (row.WATER_USED === 0) {
+      flags.push({ label: "Zero usage", variant: "secondary" });
+    }
+
+    if (row.LAST_READING != null && row.CURRENT_READING < row.LAST_READING) {
+      flags.push({ label: "Current < last", variant: "destructive" });
+    }
+
+    const usageSpikeThreshold = anomalyMetrics.usageMean + anomalyMetrics.usageStdDev * 2;
+    if (row.WATER_USED > usageSpikeThreshold && row.WATER_USED > 0) {
+      flags.push({ label: "Usage spike", variant: "secondary" });
+    }
+
+    if (row.WATER_USED > 0 && anomalyMetrics.medianPricePerGallon > 0) {
+      const rowPricePerGallon = row.PRICE / row.WATER_USED;
+      if (
+        rowPricePerGallon > anomalyMetrics.medianPricePerGallon * 1.75 ||
+        rowPricePerGallon < anomalyMetrics.medianPricePerGallon * 0.5
+      ) {
+        flags.push({ label: "Price anomaly", variant: "secondary" });
+      }
+    }
+
+    return flags;
+  };
+
+  const setQuickPreset = (preset: "today" | "last7" | "thisMonth") => {
+    const now = new Date();
+    const toIsoDate = (date: Date) => date.toISOString().slice(0, 10);
+
+    if (preset === "today") {
+      const today = toIsoDate(now);
+      setDateFrom(today);
+      setDateTo(today);
+      setSortBy("date_desc");
+      return;
+    }
+
+    if (preset === "last7") {
+      const from = new Date(now);
+      from.setDate(now.getDate() - 6);
+      setDateFrom(toIsoDate(from));
+      setDateTo(toIsoDate(now));
+      setSortBy("date_desc");
+      return;
+    }
+
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    setDateFrom(toIsoDate(from));
+    setDateTo(toIsoDate(now));
+    setSortBy("date_desc");
+  };
+
+  const saveCurrentPreset = () => {
+    const name = window.prompt("Preset name");
+    if (!name?.trim()) return;
+
+    const newPreset: SavedPreset = {
+      id: `${Date.now()}`,
+      name: name.trim(),
+      communityId: selectedCommunityId,
+      meterId: selectedMeterId,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      sortBy,
+    };
+
+    savePresetsToStorage([newPreset, ...savedPresets]);
+  };
+
+  const applySavedPreset = (preset: SavedPreset) => {
+    setSelectedCommunityId(preset.communityId);
+    setSelectedMeterId(preset.meterId);
+    setDateFrom(preset.dateFrom ?? "");
+    setDateTo(preset.dateTo ?? "");
+    setSortBy(preset.sortBy);
+  };
+
+  const removePreset = (id: string) => {
+    savePresetsToStorage(savedPresets.filter((preset) => preset.id !== id));
+  };
 
   const selectedCommunityLabel =
     communityOptions.find((option) => option.value === selectedCommunityId)?.label ?? "All communities";
@@ -226,6 +430,7 @@ export const MeterReadingsList = () => {
     const headers = [
       "Entry ID",
       "Meter ID",
+      "Community ID",
       "Current Reading (gal)",
       "Last Reading (gal)",
       "Water Used (gal)",
@@ -234,13 +439,22 @@ export const MeterReadingsList = () => {
       "Last Read Date",
     ];
 
-    const lines = [headers.map(csvEscape).join(",")];
+    const lines = [
+      ["Report Community", selectedCommunityLabel].map(csvEscape).join(","),
+      ["Report Meter", selectedMeterLabel].map(csvEscape).join(","),
+      ["From Date", dateFrom || "All"].map(csvEscape).join(","),
+      ["To Date", dateTo || "All"].map(csvEscape).join(","),
+      ["Sort By", sortBy].map(csvEscape).join(","),
+      "",
+      headers.map(csvEscape).join(","),
+    ];
 
     for (const row of exportRows) {
       lines.push(
         [
           row.id,
           row.METER_ID,
+          row.COMMUNITY_ID,
           formatTwoDecimals(row.CURRENT_READING),
           formatTwoDecimals(row.LAST_READING),
           formatTwoDecimals(row.WATER_USED),
@@ -408,13 +622,50 @@ export const MeterReadingsList = () => {
       id: "actions",
       accessorKey: "id",
       header: "Actions",
+      size: 120,
+      minSize: 120,
       cell: ({ getValue }) => {
         const id = getValue<number>();
         return (
-          <div className="flex gap-2">
-            <ShowButton recordItemId={id} variant="ghost" size="sm" />
-            <EditButton recordItemId={id} variant="ghost" size="sm" />
-            <DeleteButton recordItemId={id} variant="ghost" size="sm" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8">
+                <MoreHorizontal className="mr-1 h-4 w-4" />
+                Actions
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem asChild>
+                <ShowButton recordItemId={id} variant="ghost" size="sm" className="w-full justify-start" />
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <EditButton recordItemId={id} variant="ghost" size="sm" className="w-full justify-start" />
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <DeleteButton recordItemId={id} variant="ghost" size="sm" className="w-full justify-start" />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+    {
+      id: "flags",
+      header: "Flags",
+      cell: ({ row }) => {
+        const flags = getRowFlags(row.original as MeterReadingRow);
+
+        if (!flags.length) {
+          return <span className="text-muted-foreground">Normal</span>;
+        }
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {flags.map((flag, index) => (
+              <Badge key={`${flag.label}-${index}`} variant={flag.variant}>
+                {flag.label}
+              </Badge>
+            ))}
           </div>
         );
       },
@@ -428,8 +679,11 @@ export const MeterReadingsList = () => {
       filters: {
         permanent: permanentFilters,
       },
+      sorters: {
+        permanent: permanentSorters,
+      },
       meta: {
-        select: "id,METER_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
+        select: "id,METER_ID,COMMUNITY_ID,CURRENT_READING,LAST_READING,WATER_USED,PRICE,DATE_CURRENT,DATE_LAST_READ",
       },
     },
   });
@@ -492,11 +746,71 @@ export const MeterReadingsList = () => {
             onClick={() => {
               setSelectedCommunityId(undefined);
               setSelectedMeterId(undefined);
+              setDateFrom("");
+              setDateTo("");
+              setSortBy("date_desc");
             }}
           >
             Clear Filters
           </Button>
         </div>
+      </div>
+
+      <div className="mb-6 grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto]">
+        <div className="space-y-2">
+          <p className="text-sm font-medium">From Date</p>
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-medium">To Date</p>
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Sort By</p>
+          <select
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+          >
+            <option value="date_desc">Newest date first</option>
+            <option value="date_asc">Oldest date first</option>
+            <option value="usage_desc">Highest water used</option>
+            <option value="price_desc">Highest price</option>
+            <option value="meter_asc">Meter ID (ascending)</option>
+          </select>
+        </div>
+        <div className="flex items-end gap-2">
+          <Button variant="outline" onClick={() => setQuickPreset("today")}>Today</Button>
+          <Button variant="outline" onClick={() => setQuickPreset("last7")}>Last 7 Days</Button>
+          <Button variant="outline" onClick={() => setQuickPreset("thisMonth")}>This Month</Button>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-md border p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-semibold">Saved Filter Presets</p>
+          <Button variant="outline" size="sm" onClick={saveCurrentPreset}>
+            <Save className="mr-2 h-4 w-4" />
+            Save Current
+          </Button>
+        </div>
+
+        {savedPresets.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No saved presets yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {savedPresets.map((preset) => (
+              <div key={preset.id} className="flex items-center gap-1 rounded-md border px-2 py-1">
+                <Button variant="ghost" size="sm" onClick={() => applySavedPreset(preset)}>
+                  {preset.name}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => removePreset(preset.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <DataTable table={table} />

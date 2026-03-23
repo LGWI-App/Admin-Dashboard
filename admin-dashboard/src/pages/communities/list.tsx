@@ -3,10 +3,28 @@ import { CreateButton } from "@/components/refine-ui/buttons/create";
 import { DeleteButton } from "@/components/refine-ui/buttons/delete";
 import { EditButton } from "@/components/refine-ui/buttons/edit";
 import { ShowButton } from "@/components/refine-ui/buttons/show";
+import { Input } from "@/components/ui/input";
 import { useTable } from "@refinedev/react-table";
 import { ColumnDef } from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 
 export const CommunitiesList = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const permanentFilters = useMemo(() => {
+    const query = searchQuery.trim();
+
+    if (!query) return [];
+
+    return [
+      {
+        field: "LOCATION_NAME",
+        operator: "contains" as const,
+        value: query,
+      },
+    ];
+  }, [searchQuery]);
+
   const columns: ColumnDef<any>[] = [
     {
       id: "COMMUNITY_ID",
@@ -37,7 +55,13 @@ export const CommunitiesList = () => {
           <div className="flex gap-2">
             <ShowButton recordItemId={id} variant="ghost" size="sm" />
             <EditButton recordItemId={id} variant="ghost" size="sm" />
-            <DeleteButton recordItemId={id} variant="ghost" size="sm" />
+            <DeleteButton
+              resource="COMMUNITY"
+              recordItemId={id}
+              variant="ghost"
+              size="sm"
+              meta={{ idColumnName: "COMMUNITY_ID" }}
+            />
           </div>
         );
       },
@@ -48,6 +72,9 @@ export const CommunitiesList = () => {
     columns,
     refineCoreProps: {
       resource: "COMMUNITY",
+      filters: {
+        permanent: permanentFilters,
+      },
       meta: {
         select: "COMMUNITY_ID,LOCATION_NAME,PRICE_RATE",
       },
@@ -62,6 +89,13 @@ export const CommunitiesList = () => {
           <p className="text-muted-foreground">Manage water communities</p>
         </div>
         <CreateButton resource="COMMUNITY" />
+      </div>
+      <div className="mb-6 max-w-md">
+        <Input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search community location..."
+        />
       </div>
       <DataTable table={table} />
     </div>

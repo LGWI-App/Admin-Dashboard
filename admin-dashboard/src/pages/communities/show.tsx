@@ -58,7 +58,11 @@ export const CommunitiesShow = () => {
         <div className="flex gap-2">
           <ListButton resource="COMMUNITY" />
           <EditButton recordItemId={id} />
-          <DeleteButton recordItemId={id} />
+          <DeleteButton
+            resource="COMMUNITY"
+            recordItemId={id}
+            meta={{ idColumnName: "COMMUNITY_ID" }}
+          />
         </div>
       </div>
 

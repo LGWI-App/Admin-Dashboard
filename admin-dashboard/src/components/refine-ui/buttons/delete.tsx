@@ -70,8 +70,8 @@ export const DeleteButton = React.forwardRef<
       <PopoverTrigger asChild>
         <span>
           <Button
-            variant="destructive"
             {...rest}
+            variant="destructive"
             ref={ref}
             disabled={isDisabled}
           >

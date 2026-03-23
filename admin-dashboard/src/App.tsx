@@ -1,4 +1,4 @@
-import { GitHubBanner, Refine } from "@refinedev/core";
+import { Authenticated, GitHubBanner, Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
@@ -7,7 +7,7 @@ import routerProvider, {
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
 import { liveProvider } from "@refinedev/supabase";
-import { BrowserRouter, Route, Routes, Outlet } from "react-router";
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router";
 import "./App.css";
 import { Toaster } from "./components/refine-ui/notification/toaster";
 import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
@@ -28,6 +28,8 @@ import { CommunitiesList } from "./pages/communities/list";
 import { CommunitiesCreate } from "./pages/communities/create";
 import { CommunitiesEdit } from "./pages/communities/edit";
 import { CommunitiesShow } from "./pages/communities/show";
+import { ForgotPasswordForm } from "./components/refine-ui/form/forgot-password-form";
+import { SignInForm } from "./components/refine-ui/form/sign-in-form";
 
 function App() {
   return (
@@ -78,10 +80,32 @@ function App() {
             >
               <Routes>
                 <Route
+                  path="/login"
                   element={
-                    <Layout>
-                      <Outlet />
-                    </Layout>
+                    <Authenticated key="auth-login" fallback={<SignInForm />}>
+                      <Navigate to="/" replace />
+                    </Authenticated>
+                  }
+                />
+                <Route
+                  path="/forgot-password"
+                  element={
+                    <Authenticated key="auth-forgot" fallback={<ForgotPasswordForm />}>
+                      <Navigate to="/" replace />
+                    </Authenticated>
+                  }
+                />
+
+                <Route
+                  element={
+                    <Authenticated
+                      key="auth-protected"
+                      fallback={<Navigate to="/login" replace />}
+                    >
+                      <Layout>
+                        <Outlet />
+                      </Layout>
+                    </Authenticated>
                   }
                 >
                   <Route index element={<Dashboard />} />
@@ -102,6 +126,8 @@ function App() {
                     <Route path="show/:id" element={<CommunitiesShow />} />
                   </Route>
                 </Route>
+
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               <Toaster />
               <RefineKbar />
