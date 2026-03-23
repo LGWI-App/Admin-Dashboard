@@ -1,5 +1,6 @@
 import { UserAvatar } from "@/components/refine-ui/layout/user-avatar";
 import { ThemeToggle } from "@/components/refine-ui/theme/theme-toggle";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,8 @@ import {
   useActiveAuthProvider,
   useLogout,
 } from "@refinedev/core";
-import { LogOutIcon } from "lucide-react";
+import { Home, LogOutIcon } from "lucide-react";
+import { useNavigate } from "react-router";
 import brandLogo from "../../../../logo.png";
 
 export const Header = () => {
@@ -40,6 +42,7 @@ function DesktopHeader() {
         "z-40"
       )}
     >
+      <HomeButton />
       <ThemeToggle />
       <UserDropdown />
     </header>
@@ -115,10 +118,32 @@ function MobileHeader() {
         </h2>
       </div>
 
-      <ThemeToggle className={cn("h-8", "w-8")} />
+      <div className={cn("flex", "items-center", "gap-2")}>
+        <HomeButton compact />
+        <ThemeToggle className={cn("h-8", "w-8")} />
+      </div>
     </header>
   );
 }
+
+const HomeButton = ({ compact = false }: { compact?: boolean }) => {
+  const navigate = useNavigate();
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size={compact ? "icon" : "sm"}
+      className={cn({
+        "h-8 w-8": compact,
+      })}
+      onClick={() => navigate("/")}
+    >
+      <Home className={cn("h-4", "w-4", { "mr-2": !compact })} />
+      {!compact ? "Home" : null}
+    </Button>
+  );
+};
 
 const UserDropdown = () => {
   const { mutate: logout, isPending: isLoggingOut } = useLogout();

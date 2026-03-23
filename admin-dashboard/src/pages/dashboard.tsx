@@ -70,7 +70,7 @@ export const Dashboard = () => {
         <CardContent>
           <p className="text-muted-foreground">
             AguaVision is a comprehensive water meter management system designed for Life Giving Water International.
-            This admin dashboard allows you to track meter readings with OCR technology,
+            This admin dashboard allows you to track meter readings
             and monitor water usage across multiple communities.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-4 text-center">
