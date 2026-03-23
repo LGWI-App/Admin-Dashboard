@@ -16,8 +16,6 @@ import { useDelete, useList, useNavigation } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Check, ChevronsUpDown, FileSpreadsheet, FileText, MoreHorizontal, Save, Trash2, X } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { useMemo, useState, useEffect } from "react";
 import lgwiLogo from "../../../logo.png";
 
@@ -549,6 +547,11 @@ export const MeterReadingsList = () => {
 
     const exportPdf = async () => {
       if (!exportRows.length) return;
+
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
 
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
       const generatedAt = new Date().toLocaleString();
