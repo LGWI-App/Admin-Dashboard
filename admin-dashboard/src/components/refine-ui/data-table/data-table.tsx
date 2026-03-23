@@ -22,6 +22,12 @@ type DataTableProps<TData extends BaseRecord> = {
   table: UseTableReturnType<TData, HttpError>;
 };
 
+const numericColumnIdPattern = /(id|reading|used|price|rate|amount|count|total)/i;
+
+function isNumericColumnId(columnId: string) {
+  return numericColumnIdPattern.test(columnId);
+}
+
 export function DataTable<TData extends BaseRecord>({
   table,
 }: DataTableProps<TData>) {
@@ -82,15 +88,33 @@ export function DataTable<TData extends BaseRecord>({
     <div className={cn("flex", "flex-col", "flex-1", "gap-4")}>
       <div ref={tableContainerRef} className={cn("rounded-md", "border")}>
         <Table ref={tableRef} style={{ tableLayout: "fixed", width: "100%" }}>
-          <TableHeader>
+          <TableHeader
+            className={cn(
+              "bg-muted/60",
+              "sticky",
+              "top-0",
+              "z-10",
+              "backdrop-blur",
+              "supports-[backdrop-filter]:bg-muted/55"
+            )}
+          >
             {getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
+              <TableRow key={headerGroup.id} className={cn("border-b", "border-border") }>
+                {headerGroup.headers.map((header, headerIndex) => {
                   const isPlaceholder = header.isPlaceholder;
+                  const isNumeric = isNumericColumnId(header.column.id);
 
                   return (
                     <TableHead
                       key={header.id}
+                      className={cn(
+                        {
+                          "text-center": isNumeric,
+                        },
+                        {
+                          "border-l border-border/85": headerIndex > 0,
+                        }
+                      )}
                       style={{
                         ...getCommonStyles({
                           column: header.column,
@@ -99,7 +123,11 @@ export function DataTable<TData extends BaseRecord>({
                       }}
                     >
                       {isPlaceholder ? null : (
-                        <div className={cn("flex", "items-center", "gap-1")}>
+                        <div
+                          className={cn("flex", "items-center", "gap-1", {
+                            "justify-center": isNumeric,
+                          })}
+                        >
                           {flexRender(
                             header.column.columnDef.header,
                             header.getContext()
@@ -165,14 +193,31 @@ export function DataTable<TData extends BaseRecord>({
                   <TableRow
                     key={row.original?.id ?? row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    className={cn(
+                      "border-b",
+                      "border-border",
+                      "odd:bg-muted/40",
+                      "even:bg-background",
+                      "hover:!bg-accent/70"
+                    )}
                   >
-                    {row.getVisibleCells().map((cell) => {
+                    {row.getVisibleCells().map((cell, cellIndex) => {
                       const shouldTruncate =
                         cell.column.id !== "actions" && cell.column.id !== "flags";
+                      const isNumeric = isNumericColumnId(cell.column.id);
 
                       return (
                         <TableCell
                           key={cell.id}
+                          className={cn(
+                            "border-border/85",
+                            {
+                              "text-center tabular-nums": isNumeric,
+                            },
+                            {
+                              "border-l border-border/80": cellIndex > 0,
+                            }
+                          )}
                           style={{
                             ...getCommonStyles({
                               column: cell.column,

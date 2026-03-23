@@ -49,6 +49,28 @@ export const CommunitiesEdit = () => {
         <CardContent>
           <form onSubmit={handleSubmit(onFinish)} className="space-y-6">
             <div className="space-y-2">
+              <Label htmlFor="COMMUNITY_ID">Community ID</Label>
+              <Input
+                id="COMMUNITY_ID"
+                type="number"
+                {...register("COMMUNITY_ID", {
+                  required: "Community ID is required",
+                  valueAsNumber: true,
+                  min: {
+                    value: 1,
+                    message: "Community ID must be greater than 0",
+                  },
+                })}
+                placeholder="Enter community ID"
+              />
+              {errors.COMMUNITY_ID && (
+                <p className="text-sm text-destructive">
+                  {errors.COMMUNITY_ID.message as string}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="LOCATION_NAME">Location Name</Label>
               <Input
                 id="LOCATION_NAME"

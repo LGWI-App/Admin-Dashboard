@@ -1,9 +1,7 @@
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { CreateButton } from "@/components/refine-ui/buttons/create";
-import { DeleteButton } from "@/components/refine-ui/buttons/delete";
-import { EditButton } from "@/components/refine-ui/buttons/edit";
-import { ShowButton } from "@/components/refine-ui/buttons/show";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,10 +12,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useList } from "@refinedev/core";
+import { useDelete, useList, useNavigation } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { Check, ChevronsUpDown, FileSpreadsheet, FileText, MoreHorizontal, Save, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, FileSpreadsheet, FileText, MoreHorizontal, Save, Trash2, X } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useMemo, useState, useEffect } from "react";
@@ -126,6 +124,8 @@ export const MeterReadingsList = () => {
   const [dateTo, setDateTo] = useState<string>("");
   const [sortBy, setSortBy] = useState<SortOption>("date_desc");
   const [savedPresets, setSavedPresets] = useState<SavedPreset[]>([]);
+  const { show, edit } = useNavigation();
+  const { mutate: deleteOne } = useDelete();
 
   useEffect(() => {
     const stored = localStorage.getItem(PRESETS_STORAGE_KEY);
@@ -406,6 +406,61 @@ export const MeterReadingsList = () => {
   const selectedMeterLabel =
     meterOptions.find((option) => option.value === selectedMeterId)?.label ?? "All meters";
 
+  const activeFilterChips = useMemo(() => {
+    const chips: Array<{ key: string; label: string }> = [];
+
+    if (selectedCommunityId) {
+      chips.push({ key: "community", label: `Community: ${selectedCommunityLabel}` });
+    }
+    if (selectedMeterId) {
+      chips.push({ key: "meter", label: `Meter: ${selectedMeterLabel}` });
+    }
+    if (dateFrom) {
+      chips.push({ key: "from", label: `From: ${dateFrom}` });
+    }
+    if (dateTo) {
+      chips.push({ key: "to", label: `To: ${dateTo}` });
+    }
+    if (sortBy !== "date_desc") {
+      chips.push({
+        key: "sort",
+        label:
+          sortBy === "date_asc"
+            ? "Sort: Oldest date"
+            : sortBy === "usage_desc"
+            ? "Sort: Highest usage"
+            : sortBy === "price_desc"
+            ? "Sort: Highest price"
+            : "Sort: Meter ID",
+      });
+    }
+
+    return chips;
+  }, [selectedCommunityId, selectedMeterId, dateFrom, dateTo, sortBy, selectedCommunityLabel, selectedMeterLabel]);
+
+  const clearFilterChip = (key: string) => {
+    if (key === "community") {
+      setSelectedCommunityId(undefined);
+      setSelectedMeterId(undefined);
+      return;
+    }
+    if (key === "meter") {
+      setSelectedMeterId(undefined);
+      return;
+    }
+    if (key === "from") {
+      setDateFrom("");
+      return;
+    }
+    if (key === "to") {
+      setDateTo("");
+      return;
+    }
+    if (key === "sort") {
+      setSortBy("date_desc");
+    }
+  };
+
   const exportFilenameSuffix = () => {
     const now = new Date();
     const yyyy = now.getFullYear();
@@ -635,14 +690,28 @@ export const MeterReadingsList = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem asChild>
-                <ShowButton recordItemId={id} variant="ghost" size="sm" className="w-full justify-start" />
+              <DropdownMenuItem onClick={() => show("METER_READINGS", id)}>
+                View
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <EditButton recordItemId={id} variant="ghost" size="sm" className="w-full justify-start" />
+              <DropdownMenuItem onClick={() => edit("METER_READINGS", id)}>
+                Edit
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <DeleteButton recordItemId={id} variant="ghost" size="sm" className="w-full justify-start" />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    "Are you sure you want to delete this meter reading?"
+                  );
+
+                  if (!confirmed) return;
+
+                  deleteOne({
+                    resource: "METER_READINGS",
+                    id,
+                  });
+                }}
+              >
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -716,75 +785,97 @@ export const MeterReadingsList = () => {
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-[1fr_1fr_auto]">
-        <SearchableSelect
-          label="Community"
-          placeholder="Select community"
-          searchPlaceholder="Search communities..."
-          emptyText="No community found"
-          options={communityOptions}
-          value={selectedCommunityId}
-          onChange={(value) => {
-            setSelectedCommunityId(value);
-            setSelectedMeterId(undefined);
-          }}
-        />
+      <Card className="mb-6">
+        <CardContent className="pt-6 space-y-4">
+          <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
+            <SearchableSelect
+              label="Community"
+              placeholder="Select community"
+              searchPlaceholder="Search communities..."
+              emptyText="No community found"
+              options={communityOptions}
+              value={selectedCommunityId}
+              onChange={(value) => {
+                setSelectedCommunityId(value);
+                setSelectedMeterId(undefined);
+              }}
+            />
 
-        <SearchableSelect
-          label="Meter"
-          placeholder="Select meter"
-          searchPlaceholder="Search meters..."
-          emptyText="No meter found"
-          options={meterOptions}
-          value={selectedMeterId}
-          onChange={setSelectedMeterId}
-        />
+            <SearchableSelect
+              label="Meter"
+              placeholder="Select meter"
+              searchPlaceholder="Search meters..."
+              emptyText="No meter found"
+              options={meterOptions}
+              value={selectedMeterId}
+              onChange={setSelectedMeterId}
+            />
 
-        <div className="flex items-end">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSelectedCommunityId(undefined);
-              setSelectedMeterId(undefined);
-              setDateFrom("");
-              setDateTo("");
-              setSortBy("date_desc");
-            }}
-          >
-            Clear Filters
-          </Button>
-        </div>
-      </div>
+            <div className="flex items-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelectedCommunityId(undefined);
+                  setSelectedMeterId(undefined);
+                  setDateFrom("");
+                  setDateTo("");
+                  setSortBy("date_desc");
+                }}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto]">
-        <div className="space-y-2">
-          <p className="text-sm font-medium">From Date</p>
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <p className="text-sm font-medium">To Date</p>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Sort By</p>
-          <select
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-          >
-            <option value="date_desc">Newest date first</option>
-            <option value="date_asc">Oldest date first</option>
-            <option value="usage_desc">Highest water used</option>
-            <option value="price_desc">Highest price</option>
-            <option value="meter_asc">Meter ID (ascending)</option>
-          </select>
-        </div>
-        <div className="flex items-end gap-2">
-          <Button variant="outline" onClick={() => setQuickPreset("today")}>Today</Button>
-          <Button variant="outline" onClick={() => setQuickPreset("last7")}>Last 7 Days</Button>
-          <Button variant="outline" onClick={() => setQuickPreset("thisMonth")}>This Month</Button>
-        </div>
-      </div>
+          <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto]">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">From Date</p>
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">To Date</p>
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Sort By</p>
+              <select
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+              >
+                <option value="date_desc">Newest date first</option>
+                <option value="date_asc">Oldest date first</option>
+                <option value="usage_desc">Highest water used</option>
+                <option value="price_desc">Highest price</option>
+                <option value="meter_asc">Meter ID (ascending)</option>
+              </select>
+            </div>
+            <div className="flex items-end gap-2">
+              <Button variant="outline" onClick={() => setQuickPreset("today")}>Today</Button>
+              <Button variant="outline" onClick={() => setQuickPreset("last7")}>Last 7 Days</Button>
+              <Button variant="outline" onClick={() => setQuickPreset("thisMonth")}>This Month</Button>
+            </div>
+          </div>
+
+          {activeFilterChips.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {activeFilterChips.map((chip) => (
+                <Badge key={chip.key} variant="secondary" className="gap-1 pr-1">
+                  {chip.label}
+                  <button
+                    type="button"
+                    className="rounded-sm p-0.5 hover:bg-muted-foreground/20"
+                    onClick={() => clearFilterChip(chip.key)}
+                    aria-label={`Remove ${chip.label}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <div className="mb-6 rounded-md border p-4">
         <div className="mb-3 flex items-center justify-between">
