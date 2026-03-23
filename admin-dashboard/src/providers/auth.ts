@@ -37,7 +37,7 @@ const authProvider: AuthProvider = {
       },
     };
   },
-  register: async ({ email, password }) => {
+  register: async () => {
     return {
       success: false,
       error: {
