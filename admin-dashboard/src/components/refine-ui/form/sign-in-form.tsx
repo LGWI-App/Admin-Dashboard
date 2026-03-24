@@ -19,10 +19,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { REMEMBER_ME_STORAGE_KEY } from "@/providers/constants";
 import { useLink, useLogin, useRefineOptions } from "@refinedev/core";
 
 export const SignInForm = () => {
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.localStorage.getItem(REMEMBER_ME_STORAGE_KEY) === "1";
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -38,6 +45,7 @@ export const SignInForm = () => {
     login({
       email,
       password,
+      rememberMe,
     });
   };
 

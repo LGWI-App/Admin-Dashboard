@@ -75,6 +75,16 @@ function App() {
                 syncWithLocation: true,
                 warnWhenUnsavedChanges: true,
                 projectId: "varhhvkqabiqctkcdbxa",
+                title: {
+                  text: "LGWI",
+                  icon: (
+                    <img
+                      src="/logo.png"
+                      alt="LGWI logo"
+                      className="w-45 h-45 object-contain"
+                    />
+                  ),
+                },
               }}
             >
               <Routes>

@@ -1,9 +1,17 @@
 import { AuthProvider } from "@refinedev/core";
+import { REMEMBER_ME_STORAGE_KEY } from "./constants";
 import { supabaseClient } from "./supabase-client";
 
 const authProvider: AuthProvider = {
-  login: async ({ email, password }) => {
+  login: async ({ email, password, rememberMe }) => {
     try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          REMEMBER_ME_STORAGE_KEY,
+          rememberMe ? "1" : "0"
+        );
+      }
+
       const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
