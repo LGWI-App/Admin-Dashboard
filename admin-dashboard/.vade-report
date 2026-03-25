@@ -1,0 +1,46 @@
+# Vercel Speed Insights Installation Report
+
+## Summary
+Successfully installed and configured Vercel Speed Insights for the admin-dashboard React + Vite application.
+
+## Changes Made
+
+### 1. Package Installation
+- Installed `@vercel/speed-insights` package (npm)
+- Package version added to dependencies in package.json
+
+### 2. Code Integration
+**Modified: `src/App.tsx`**
+- Added import: `import { SpeedInsights } from "@vercel/speed-insights/react";`
+- Added `<SpeedInsights />` component at the root level inside `<BrowserRouter>`
+- Component placed after all other provider wrappers to ensure proper initialization
+
+### 3. Implementation Details
+- **Framework**: React 19.2.4 with Vite 8.0.2
+- **Integration approach**: React-specific implementation using `@vercel/speed-insights/react`
+- **Placement**: Component added outside all Refine providers but inside BrowserRouter, following best practices for analytics integration
+
+### 4. Verification
+- ✅ Build completed successfully (1.35s)
+- ✅ No ESLint errors or warnings
+- ✅ Speed Insights bundle properly code-split (vendor-vercel-speed-insights-DUywcHMn.js - 2.40 kB gzipped: 1.14 kB)
+- ✅ No breaking changes to existing functionality
+
+## Files Modified
+1. `package.json` - Added @vercel/speed-insights dependency
+2. `package-lock.json` - Updated with new dependency tree
+3. `src/App.tsx` - Added SpeedInsights component import and usage
+
+## Next Steps
+After deployment to Vercel:
+1. Navigate to your Vercel dashboard
+2. Select your project
+3. Go to Speed Insights section
+4. Click "Enable" to activate the feature
+5. Speed Insights data will appear after deployment and user visits
+
+## Technical Notes
+- The integration follows the official Vercel Speed Insights quickstart documentation (fetched on March 25, 2026)
+- The component is framework-aware and automatically handles route tracking in React applications
+- No additional configuration is required; the component works out of the box
+- Data collection is GDPR compliant and privacy-focused
