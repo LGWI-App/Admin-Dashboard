@@ -1,6 +1,7 @@
 import { Authenticated, Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import routerProvider, {
   DocumentTitleHandler,
@@ -147,6 +148,7 @@ function App() {
           </DevtoolsProvider>
         </ThemeProvider>
       </RefineKbarProvider>
+      <SpeedInsights />
     </BrowserRouter>
   );
 }
